@@ -1,0 +1,10 @@
+altair
+numpy
+pandas
+pydeck
+streamlit
+matplotlib
+scikit-learn
+pillow
+Python-IO
+renishawWiRE
