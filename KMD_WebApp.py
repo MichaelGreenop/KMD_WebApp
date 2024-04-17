@@ -10,6 +10,9 @@ from PIL import Image
 from io import BytesIO
 from renishawWiRE import WDFReader
 
+from scipy.ndimage import gaussian_filter
+from scipy.ndimage import binary_dilation
+
 
 # Tasks - General functions section
 
@@ -314,6 +317,36 @@ def page3():
 
                                 img = img_array.reshape((shp[0],shp[1]))
 
+                                expanded_image = np.kron(img, np.ones((5, 5))) # Increases the resolution, each pixel becomes 25 (5 by 5)
+
+                                smoothed_expanded_image = gaussian_filter(expanded_image, sigma=2) # Blurs/interpolates the image
+
+                                
+                                def sum_values_at_coordinates(arr, coordinates):
+                                    return np.sum(arr[tuple(coordinates.T)])
+
+                                def find_changed_coordinates_and_sum(original_arr, new_arr):
+                                    changed_coords = np.argwhere((original_arr == 0) & (new_arr != 0))
+                                    total_sum = sum_values_at_coordinates(new_arr, changed_coords)
+                                    return changed_coords, total_sum
+
+                                def reset_pixels_below_median(arr, coordinates):
+                                    summed_values = np.array([arr[coord[0], coord[1]] for coord in coordinates])
+                                    thres_value = 3*np.mean(summed_values)
+                                    for coord in coordinates:
+                                        if arr[coord[0], coord[1]] < thres_value:
+                                            arr[coord[0], coord[1]] = 0
+                                            
+                                    return arr
+                                
+                                changed_coords, total_sum = find_changed_coordinates_and_sum(expanded_image, smoothed_expanded_image)
+                                
+
+
+                                SEI = reset_pixels_below_median(smoothed_expanded_image, changed_coords)
+
+                                
+
 
                                 
                                 colors_g = [(0, 0, 0), (0, 1, 0)]  # Green -> Black
@@ -355,7 +388,7 @@ def page3():
                                 cax = divider.append_axes('right', size='5%', pad=0.05)
 
                                 # Plot clusters_array with colorbar
-                                im = ax0.imshow(img, cmap=selected_cmap, interpolation='bicubic', aspect='auto')
+                                im = ax0.imshow(SEI, cmap=selected_cmap, aspect='auto')
                                 ax0.grid(False)
                                 ax0.axes.xaxis.set_visible(False)
                                 ax0.axes.yaxis.set_visible(False)
